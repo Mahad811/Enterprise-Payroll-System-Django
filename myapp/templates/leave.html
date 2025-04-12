@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leave Management - Employee Payroll System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% load static %}
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Payroll System</h2>
+            </div>
+            <div class="user-info">
+                <!-- <div class="user-avatar">
+                    <img src="{% static 'img/avatar.png' %}" alt="User Avatar" onerror="this.src='/static/img/default-avatar.png'">
+                </div> -->
+                
+                <div class="user-details">
+                    <h3>{{ employee.get_full_name }}</h3>
+                    <p>{{ employee.role }}</p>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li ><a href="{% url 'dashboard' %}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{% url 'payroll' %}"><span class="icon">💰</span> Payroll</a></li>
+                {% if employee.role == "Manager" %}
+                <li><a href="{% url 'salary' %}"><span class="icon">💰</span> Salary Management</a></li>
+                {% endif %}
+                {% if employee.role != "Admin" %}
+                <li class="active"><a href="{% url 'leave' %}"><span class="icon">🗓️</span> Leave Management</a></li>
+                {% endif %}
+                {% if employee.role == "Admin" %} 
+                <li><a href="{% url 'employee' %}"><span class="icon">👥</span> Employees</a></li>
+                {% endif %}
+                {% if employee.role == "Admin" or employee.role == "Employee"%}
+                <li><a href="{% url 'settings' %}"><span class="icon">⚙️</span> Settings</a></li>
+                {% endif %}
+                <li><a href="{% url 'logout' %}"><span class="icon">🚪</span> Logout</a></li>
+            
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search leave requests...">
+                    <button type="submit">🔍</button>
+                </div>
+                <div class="top-bar-actions">
+                    <div class="notification">
+                        <span class="icon">🔔</span>
+                        <span class="badge">3</span>
+                    </div>
+                    <div class="messages">
+                        <span class="icon">✉️</span>
+                        <span class="badge">5</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <div class="page-header">
+                    <h1>Leave Management</h1>
+                    <p>Apply for leave and track your leave history</p>
+                </div>
+
+                <div class="leave-stats">
+                    <div class="stats-cards">
+                        <div class="card">
+                            <div class="card-icon">🌴</div>
+                            <div class="card-info">
+                                <h3>Annual Leave</h3>
+                                <p class="amount">{{ leave_balance.annual|default:"15" }} days</p>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-icon">🏥</div>
+                            <div class="card-info">
+                                <h3>Sick Leave</h3>
+                                <p class="amount">{{ leave_balance.sick|default:"10" }} days</p>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-icon">👤</div>
+                            <div class="card-info">
+                                <h3>Personal Leave</h3>
+                                <p class="amount">{{ leave_balance.personal|default:"5" }} days</p>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-icon">📅</div>
+                            <div class="card-info">
+                                <h3>Total Balance</h3>
+                                <p class="amount">{{ user.employee.leave_balance|default:"30" }} days</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div class="leave-container">
+                    <div class="leave-form">
+                        <div class="grid-item">
+                            <div class="item-header">
+                                <h2>Apply for Leave</h2>
+                            </div>
+                            <div class="item-content">
+                                {% if messages %}
+                                <div class="messages">
+                                    {% for message in messages %}
+                                    <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                                        {{ message }}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+
+                                <form method="post" action="{% url 'request_leave' %}" class="leave-application-form">
+                                    {% csrf_token %}
+
+                                    <div class="form-group">
+                                        <label for="leave_type">Leave Type</label>
+                                        <select id="leave_type" name="leave_type" required>
+                                            <option value="">Select Leave Type</option>
+                                            <option value="Annual">Annual Leave</option>
+                                            <option value="Sick">Sick Leave</option>
+                                            <option value="Personal">Personal Leave</option>
+                                            <option value="Maternity">Maternity Leave</option>
+                                            <option value="Paternity">Paternity Leave</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="start_date">Start Date</label>
+                                            <input type="date" id="start_date" name="start_date" min="" required>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="end_date">End Date</label>
+                                            <input type="date" id="end_date" name="end_date" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="reason">Reason for Leave</label>
+                                        <textarea id="reason" name="reason" rows="4" required></textarea>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="leave-days-calculator">
+                                            <p>Total Days: <span id="total_days">0</span></p>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <button type="submit" class="btn btn-primary">Submit Leave Request</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="leave-history">
+                        <div class="grid-item">
+                            <div class="item-header">
+                                <h2>Leave History</h2>
+                                <div class="filter-dropdown">
+                                    <select id="status-filter">
+                                        <option value="">All Status</option>
+                                        <option value="Approved">Approved</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Rejected">Rejected</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="item-content">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>From</th>
+                                            <th>To</th>
+                                            <th>Days</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if leave_requests %}
+                                        {% for leave in leave_requests %}
+                                        <tr>
+                                            <td>{{ leave.leave_type }}</td>
+                                            <td>{{ leave.start_date }}</td>
+                                            <td>{{ leave.end_date }}</td>
+                                            <td>{{ leave.days }}</td>
+                                            <td><span class="status {{ leave.status|lower }}">{{ leave.status }}</span>
+                                            </td>
+                                            <td>
+                                                <button class="btn-small view-details"
+                                                    data-id="{{ leave.id }}">Details</button>
+                                                {% if leave.status == 'Pending' %}
+                                                <button class="btn-small cancel-btn"
+                                                    data-id="{{ leave.id }}">Cancel</button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="6">No leave requests found</td>
+                                        </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leave Details Modal -->
+                <div id="leave-details-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Leave Request Details</h2>
+                            <span class="close">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="leave-details">
+                                <div class="detail-row">
+                                    <div class="detail-label">Leave Type:</div>
+                                    <div class="detail-value" id="modal-leave-type"></div>
+                                </div>
+                                <div class="detail-row">
+                                    <div class="detail-label">Start Date:</div>
+                                    <div class="detail-value" id="modal-start-date"></div>
+                                </div>
+                                <div class="detail-row">
+                                    <div class="detail-label">End Date:</div>
+                                    <div class="detail-value" id="modal-end-date"></div>
+                                </div>
+                                <div class="detail-row">
+                                    <div class="detail-label">Total Days:</div>
+                                    <div class="detail-value" id="modal-days"></div>
+                                </div>
+                                <div class="detail-row">
+                                    <div class="detail-label">Status:</div>
+                                    <div class="detail-value" id="modal-status"></div>
+                                </div>
+                                <div class="detail-row">
+                                    <div class="detail-label">Applied On:</div>
+                                    <div class="detail-value" id="modal-applied-date"></div>
+                                </div>
+                                <div class="detail-row full-width">
+                                    <div class="detail-label">Reason:</div>
+                                    <div class="detail-value" id="modal-reason"></div>
+                                </div>
+                                <div class="detail-row full-width" id="modal-comments-row">
+                                    <div class="detail-label">Comments:</div>
+                                    <div class="detail-value" id="modal-comments"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Calculate total days between start and end date
+        document.addEventListener('DOMContentLoaded', function () {
+            // Set minimum date for start_date and end_date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('start_date').setAttribute('min', today);
+            document.getElementById('end_date').setAttribute('min', today);
+
+            const startDateInput = document.getElementById('start_date');
+            const endDateInput = document.getElementById('end_date');
+            const totalDaysSpan = document.getElementById('total_days');
+
+            function calculateDays() {
+                if (startDateInput.value && endDateInput.value) {
+                    const startDate = new Date(startDateInput.value);
+                    const endDate = new Date(endDateInput.value);
+
+                    // Check if end date is before start date
+                    if (endDate < startDate) {
+                        totalDaysSpan.textContent = "Invalid date range";
+                        document.querySelector('.btn.btn-primary').disabled = true;
+                        return;
+                    }
+                    document.querySelector('.btn.btn-primary').disabled = false;
+                    // Calculate the difference in days
+                    const diffTime = Math.abs(endDate - startDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Include both start and end days
+
+                    totalDaysSpan.textContent = diffDays;
+                } else {
+                    totalDaysSpan.textContent = "0";
+                }
+            }
+
+            startDateInput.addEventListener('change', calculateDays);
+            endDateInput.addEventListener('change', calculateDays);
+
+            // Modal functionality
+            const modal = document.getElementById('leave-details-modal');
+            const viewButtons = document.querySelectorAll('.view-details');
+            const closeButton = document.querySelector('.close');
+
+            viewButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const leaveId = this.getAttribute('data-id');
+                    // In a real application, you would fetch the leave details from the server
+                    // For now, we'll just show the modal with placeholder data
+
+                    // Get the row data
+                    const row = this.closest('tr');
+                    const type = row.cells[0].textContent;
+                    const startDate = row.cells[1].textContent;
+                    const endDate = row.cells[2].textContent;
+                    const days = row.cells[3].textContent;
+                    const status = row.cells[4].textContent.trim();
+
+                    // Populate the modal
+                    document.getElementById('modal-leave-type').textContent = type;
+                    document.getElementById('modal-start-date').textContent = startDate;
+                    document.getElementById('modal-end-date').textContent = endDate;
+                    document.getElementById('modal-days').textContent = days;
+                    document.getElementById('modal-status').textContent = status;
+                    document.getElementById('modal-applied-date').textContent = '2023-01-15'; // Placeholder
+                    document.getElementById('modal-reason').textContent = 'Family vacation'; // Placeholder
+
+                    // Show/hide comments based on status
+                    const commentsRow = document.getElementById('modal-comments-row');
+                    if (status === 'Rejected') {
+                        commentsRow.style.display = 'flex';
+                        document.getElementById('modal-comments').textContent = 'Insufficient leave balance'; // Placeholder
+                    } else {
+                        commentsRow.style.display = 'none';
+                    }
+
+                    modal.style.display = 'block';
+                });
+            });
+
+            closeButton.addEventListener('click', function () {
+                modal.style.display = 'none';
+            });
+
+            window.addEventListener('click', function (event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+
+            // Cancel button functionality
+            const cancelButtons = document.querySelectorAll('.cancel-btn');
+
+            cancelButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const leaveId = this.getAttribute('data-id');
+                    if (confirm('Are you sure you want to cancel this leave request?')) {
+                        // In a real application, you would send a request to the server
+                        // For now, we'll just show an alert
+                        window.location.href = `/cancel-leave/${leaveId}`;
+                        
+                    }
+                });
+            });
+
+
+
+            // Status filter functionality
+            const statusFilter = document.getElementById('status-filter');
+
+            statusFilter.addEventListener('change', function () {
+                const selectedStatus = this.value.toLowerCase();
+                const rows = document.querySelectorAll('.data-table tbody tr');
+
+                rows.forEach(row => {
+                    const statusCell = row.querySelector('.status');
+                    if (!statusCell) return;
+
+                    const rowStatus = statusCell.textContent.toLowerCase();
+
+                    if (selectedStatus === '' || rowStatus === selectedStatus.toLowerCase()) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+
+    </script>
+</body>
+
+</html>

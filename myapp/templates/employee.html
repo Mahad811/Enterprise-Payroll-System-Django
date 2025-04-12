@@ -1,0 +1,451 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% csrf_token %}
+    {% load static %}
+
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <link rel="stylesheet" href="/static/css/style.css">
+   
+    <title>Employee Management - Employee Payroll System</title>
+   
+   
+</head>
+<body>
+    <div class="dashboard-container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Employee System</h2>
+            </div>
+            <div class="user-info">
+                <div class="user-details">
+                    <h3>{{ user.get_full_name }}</h3>
+                    <p>{{ user.role }}</p>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li ><a href="{% url 'dashboard' %}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{% url 'payroll' %}"><span class="icon">💰</span> Payroll</a></li>
+                {% if user.role == "Manager" %}
+                <li><a href="{% url 'salary' %}"><span class="icon">💰</span> Salary Management</a></li>
+                {% endif %}
+                {% if user.role != "Admin" %}
+                <li><a href="{% url 'leave' %}"><span class="icon">🗓️</span> Leave Management</a></li>
+                {% endif %}
+                {% if user.role == "Admin" %} 
+                <li><a href="{% url 'employee' %}"><span class="icon">👥</span> Employees</a></li>
+                {% endif %}
+                {% if user.role == "Admin" or user.role == "Employee"%}
+                <li><a href="{% url 'settings' %}"><span class="icon">⚙️</span> Settings</a></li>
+                {% endif %}
+                <li><a href="{% url 'logout' %}"><span class="icon">🚪</span> Logout</a></li>
+             </ul>
+        </nav>
+        
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-bar">
+                    <input type="text" id="employee-search" placeholder="Search employees...">
+                    <button type="submit">🔍</button>
+                </div>
+                <div class="top-bar-actions">
+                    <div class="notification">
+                        <span class="icon">🔔</span>
+                        <span class="badge">3</span>
+                    </div>
+                    <div class="messages">
+                        <span class="icon">✉</span>
+                        <span class="badge">5</span>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="dashboard-content">
+                <div class="page-header">
+                    <h1>Employee Management</h1>
+                    <p>Manage employee roles and information</p>
+                </div>
+                
+                {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                    <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="employee-management-container">
+                    <div class="grid-item">
+                        <div class="item-header">
+                            <h2>Employee List</h2>
+                            <div class="filter-dropdown">
+                                <select id="department-filter">
+                                    <option value="">All Departments</option>
+                                    <option value="IT">IT</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="HR">Human Resources</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Operations">Operations</option>
+                                    <option value="Sales">Sales</option>
+                                    <option value="Research">Research & Development</option>
+                                    <option value="Customer Service">Customer Service</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="item-content">
+                            <table class="data-table employee-table">
+                                <thead>
+                                    <tr>
+                                        <th>Employee ID</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Department</th>
+                                        <th>Role</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if users %}
+                                        {% for employee in users %}
+                                        <tr data-employee-id="{{ employee.id }}">
+                                            <td>{{ employee.id }}</td>
+                                            <td>{{ employee.get_full_name }}</td>
+                                            <td>{{ employee.email }}</td>
+                                            <td>{{ employee.department }}</td>
+                                            <td>{{ employee.role }}</td>
+                                            <td class="action-buttons">
+                                                <button class="btn-small view-details-btn" data-id="{{ employee.id }}">Details</button>
+                                                <button class="btn-small edit-btn" data-id="{{ employee.id }}">Edit</button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="7">No employees found</td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Employee Details Modal -->
+                <div id="employee-details-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Employee Details</h2>
+                            <span class="close">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="employee-profile">
+                                <div class="employee-info">
+                                    <h3 id="modal-name"></h3>
+                                    <p id="modal-position"></p>
+                                    <p id="modal-department"></p>
+                                </div>
+                            </div>
+                            
+                            <div class="employee-details">
+                                <div class="detail-section">
+                                    <h4>Contact Information</h4>
+                                    <div class="detail-row">
+                                        <div class="detail-label">Email:</div>
+                                        <div class="detail-value" id="modal-email"></div>
+                                    </div>
+                                    <div class="detail-row">
+                                        <div class="detail-label">Phone:</div>
+                                        <div class="detail-value" id="modal-phone"></div>
+                                    </div>
+                                    <div class="detail-row">
+                                        <div class="detail-label">Address:</div>
+                                        <div class="detail-value" id="modal-address"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-section">
+                                    <h4>Employment Information</h4>
+                                    <div class="detail-row">
+                                        <div class="detail-label">Employee ID:</div>
+                                        <div class="detail-value" id="modal-employee-id"></div>
+                                    </div>
+                                    <div class="detail-row">
+                                        <div class="detail-label">Role:</div>
+                                        <div class="detail-value" id="modal-role"></div>
+                                    </div>
+                                    <div class="detail-row">
+                                        <div class="detail-label">Join Date:</div>
+                                        <div class="detail-value" id="modal-join-date"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-section">
+                                    <h4>Emergency Contact</h4>
+                                    <div class="detail-row">
+                                        <div class="detail-label">Name:</div>
+                                        <div class="detail-value" id="modal-emergency-name"></div>
+                                    </div>
+                                    <div class="detail-row">
+                                        <div class="detail-label">Phone:</div>
+                                        <div class="detail-value" id="modal-emergency-phone"></div>
+                                    </div>
+                                    <div class="detail-row">
+                                        <div class="detail-label">Relationship:</div>
+                                        <div class="detail-value" id="modal-emergency-relation"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Role dropdown change detection
+            const roleSelects = document.querySelectorAll('.role-select');
+            
+            roleSelects.forEach(select => {
+                select.addEventListener('change', function() {
+                    const originalRole = this.getAttribute('data-original-role');
+                    const saveButton = this.nextElementSibling;
+                    
+                    if (this.value !== originalRole) {
+                        saveButton.style.display = 'inline-block';
+                    } else {
+                        saveButton.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Department filter functionality
+            const departmentFilter = document.getElementById('department-filter');
+            
+            departmentFilter.addEventListener('change', function() {
+                const selectedDepartment = this.value.toLowerCase();
+                const rows = document.querySelectorAll('.employee-table tbody tr');
+                
+                rows.forEach(row => {
+                    const departmentCell = row.cells[3];
+                    if (!departmentCell) return;
+                    
+                    const rowDepartment = departmentCell.textContent.toLowerCase();
+                    
+                    if (selectedDepartment === '' || rowDepartment === selectedDepartment.toLowerCase()) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Search functionality
+            const searchInput = document.getElementById('employee-search');
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = document.querySelectorAll('.employee-table tbody tr');
+                
+                rows.forEach(row => {
+                    const name = row.cells[1].textContent.toLowerCase();
+                    const email = row.cells[2].textContent.toLowerCase();
+                    const department = row.cells[3].textContent.toLowerCase();
+                    const position = row.cells[4].textContent.toLowerCase();
+                    
+                    if (name.includes(searchTerm) || 
+                        email.includes(searchTerm) || 
+                        department.includes(searchTerm) || 
+                        position.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Modal functionality
+            const modal = document.getElementById('employee-details-modal');
+            const viewButtons = document.querySelectorAll('.view-details-btn');
+            const closeButton = document.querySelector('.close');
+            
+            viewButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const employeeId = this.getAttribute('data-id');
+                    
+                    // In a real application, you would fetch the employee details from the server
+                    // For now, we'll just show the modal with data from the table
+                    
+                    const row = this.closest('tr');
+                    const employeeIdText = row.cells[0].textContent;
+                    const name = row.cells[1].textContent;
+                    const email = row.cells[2].textContent;
+                    const department = row.cells[3].textContent;
+                    const position = row.cells[4].textContent;
+                    const role = row.cells[5].textContent;
+                    
+                    // Populate the modal
+                    document.getElementById('modal-name').textContent = name;
+                    document.getElementById('modal-position').textContent = position;
+                    document.getElementById('modal-department').textContent = department;
+                    document.getElementById('modal-email').textContent = email;
+                    document.getElementById('modal-phone').textContent = '(555) 123-4567'; // Placeholder
+                    document.getElementById('modal-address').textContent = '123 Employee St, City'; // Placeholder
+                    document.getElementById('modal-employee-id').textContent = employeeIdText;
+                    document.getElementById('modal-role').textContent = role;
+                    document.getElementById('modal-join-date').textContent = '2023-01-15'; // Placeholder
+                    document.getElementById('modal-emergency-name').textContent = 'Emergency Contact'; // Placeholder
+                    document.getElementById('modal-emergency-phone').textContent = '(555) 987-6543'; // Placeholder
+                    document.getElementById('modal-emergency-relation').textContent = 'Spouse'; // Placeholder
+                    
+                    modal.style.display = 'block';
+                });
+            });
+            
+            closeButton.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+            
+            // Edit button functionality
+            const editButtons = document.querySelectorAll('.edit-btn');
+            
+
+            
+        });
+
+
+        
+
+        document.addEventListener('DOMContentLoaded', function() {
+        // Get the modal elements
+        const viewModal = document.getElementById('employee-details-modal');
+        const editModal = document.createElement('div');
+        editModal.id = 'employee-edit-modal';
+        editModal.className = 'modal';
+        
+        // Create the edit modal HTML structure
+        editModal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Edit Employee</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form method="post" action="{% url 'update_employee' %}" id="edit-employee-form" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" id="edit-employee-id" name="employee_id">
+                        
+                        <div class="form-group">
+                            <label for="edit-name">Full Name:</label>
+                            <input type="text" id="edit-name" name="name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-email">Email:</label>
+                            <input type="email" id="edit-email" name="email" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-department">Department:</label>
+                            <input type="text" id="edit-department" name="department" required readonly>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-role">Role:</label>
+                            <input type="text" id="edit-role" name="role" required readonly>
+                        </div>
+                        
+                        
+                        <div class="form-actions">
+                            <button type="button" id="cancel-edit" class="btn-secondary">Cancel</button>
+                            <button type="submit" id = "save-prof-btn" class="btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        // Add the edit modal to the document
+        document.body.appendChild(editModal);
+        
+        // Get all edit buttons
+        const editButtons = document.querySelectorAll('.edit-btn');
+        
+        // Add click event to edit buttons
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const employeeId = this.getAttribute('data-id');
+                const row = this.closest('tr');
+                
+                // Get employee data from the row
+                const id = row.cells[0].textContent;
+                const name = row.cells[1].textContent;
+                const email = row.cells[2].textContent;
+                const department = row.cells[3].textContent;
+                const role = row.cells[4].textContent;
+                
+                // Populate the edit form
+                document.getElementById('edit-employee-id').value = id;
+                document.getElementById('edit-name').value = name;
+                document.getElementById('edit-email').value = email;
+                document.getElementById('edit-department').value = department;
+                document.getElementById('edit-role').value = role;
+                
+               
+                
+                // Show the edit modal
+                editModal.style.display = 'block';
+            });
+        });
+        
+        // Close button functionality for edit modal
+        const editCloseButton = editModal.querySelector('.close');
+        editCloseButton.addEventListener('click', function() {
+            editModal.style.display = 'none';
+        });
+        
+        // Cancel button functionality
+        const cancelButton = document.getElementById('cancel-edit');
+        cancelButton.addEventListener('click', function() {
+            editModal.style.display = 'none';
+        });
+        
+        // Handle form submission
+        const editForm = document.getElementById('edit-employee-form');
+        saveBtn.addEventListener("click", function () {
+                document.querySelector(".settings-form").submit(); // Submits the form
+        });
+        
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target === editModal) {
+                editModal.style.display = 'none';
+            }
+        });
+
+        const saveBtn = document.getElementById('save-prof-btn');
+        saveBtn.addEventListener("click", function () {
+                document.querySelector("edit-employee-form").submit(); // Submits the form
+            });
+            
+    });
+
+
+
+
+    </script>
+</body>
+</html>

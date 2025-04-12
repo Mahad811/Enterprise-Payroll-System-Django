@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll - Employee Payroll System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% load static %}
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Payroll System</h2>
+            </div>
+            <div class="user-info">
+                <div class="user-details">
+                    <h3>{{ user.get_full_name }}</h3>
+                    <p>{{ user.employee.role }}</p>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li ><a href="{% url 'dashboard' %}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{% url 'payroll' %}"><span class="icon">💰</span> Payroll</a></li>
+                {% if user.employee.role == "Manager" %}
+                <li><a href="{% url 'salary' %}"><span class="icon">💰</span> Salary Management</a></li>
+                {% endif %}
+                {% if user.employee.role != "Admin" %}
+                <li><a href="{% url 'leave' %}"><span class="icon">🗓️</span> Leave Management</a></li>
+                {% endif %}
+                {% if user.employee.role == "Admin" %} 
+                <li><a href="{% url 'employee' %}"><span class="icon">👥</span> Employees</a></li>
+                {% endif %}
+                {% if user.employee.role == "Admin" or user.employee.role == "Employee"%}
+                <li><a href="{% url 'settings' %}"><span class="icon">⚙️</span> Settings</a></li>
+                {% endif %}
+                <li><a href="{% url 'logout' %}"><span class="icon">🚪</span> Logout</a></li>
+             </ul>
+        </nav>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search payslips...">
+                    <button type="submit">🔍</button>
+                </div>
+                <div class="top-bar-actions">
+                    <div class="notification">
+                        <span class="icon">🔔</span>
+                        <span class="badge">3</span>
+                    </div>
+                    <div class="messages">
+                        <span class="icon">✉️</span>
+                        <span class="badge">5</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <div class="page-header">
+                    <h1>Payroll</h1>
+                    <p>View and download your salary slips</p>
+                </div>
+
+                <div class="payroll-container">
+                    <div class="payroll-list">
+                        <div class="grid-item">
+                            <div class="item-header">
+                                <h2>Salary Slips</h2>
+                                <div class="filter-dropdown">
+                                    <select id="year-filter">
+                                        <option value="">All Years</option>
+                                        <option value="2025">2025</option>
+                                        <option value="2024">2024</option>
+                                        <option value="2023">2023</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="item-content">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Month</th>
+                                            <th>Year</th>
+                                            <th>Net Pay</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if payslips %}
+                                        {% for payslip in payslips %}
+                                        <tr
+                                            class="payslip-row {% if selected_payslip.id == payslip.id %}selected{% endif %}">
+                                            <td>{{ payslip.month }}</td>
+                                            <td>{{ payslip.year }}</td>
+                                            <td>${{ payslip.net_salary}}</td>
+                                            <td><span
+                                                    class="status {{ payslip.status|lower }}"><strong>Processed</strong></span>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'payroll' %}?id={{ payslip.id }}"
+                                                    class="btn-small">View</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="5">No payslips available</td>
+                                        </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if selected_payslip %}
+                    <div class="payslip-detail">
+                        <div class="grid-item">
+                            <div class="item-header">
+                                <h2>Salary Slip - {{ selected_payslip.month }} {{ selected_payslip.year }}</h2>
+                                <a href="{% url 'download_payslip' selected_payslip.id %}"
+                                    class="btn-small download-btn">
+                                    <span class="icon">📥</span> Download PDF
+                                </a>
+                            </div>
+                            <div class="item-content">
+                                <div class="payslip-header">
+                                    <div class="company-info">
+                                        <h3>False 9 2 5</h3>
+                                        <p>Siraiki Adda</p>
+                                        <p>Email: hr@false925.com</p>
+                                    </div>
+                                    <div class="employee-info">
+                                        <p><strong>Employee ID:</strong> {{ user.employee.id }}</p>
+                                        <p><strong>Name:</strong> {{ user.get_full_name }}</p>
+                                        <p><strong>Department:</strong> {{ user.employee.department }}</p>
+
+                                    </div>
+                                </div>
+
+                                <div class="payslip-sections">
+                                    <div class="payslip-section">
+                                        <h3>Earnings</h3>
+                                        <table class="payslip-table">
+                                            <tr>
+                                                <td>Basic Salary</td>
+                                                <td class="amount">${{ selected_payslip.basic_salary }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Housing Allowance</td>
+                                                <td class="amount">$500.00</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Transport Allowance</td>
+                                                <td class="amount">$300.00</td>
+                                            </tr>
+
+                                        </table>
+                                    </div>
+
+                                    <div class="payslip-section">
+                                        <h3>Deductions</h3>
+                                        <table class="payslip-table">
+                                            <tr>
+                                                <td>Income Tax</td>
+                                                <td class="amount">${{ selected_payslip.tax }}</td>
+                                            </tr>
+                                            <tr class="total-row">
+                                                <td><strong>Total Deductions</strong></td>
+                                                <td class="amount"><strong>${{ selected_payslip.deductions }}</strong>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="payslip-summary">
+                                    <table class="payslip-table">
+                                        <tr class="net-pay">
+                                            <td><strong>Net Pay</strong></td>
+                                            <td class="amount"><strong>${{ selected_payslip.net_salary }}</strong></td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <div class="payslip-footer">
+                                    <p>This is a computer-generated document and does not require a signature.</p>
+                                    <p>For any queries regarding your salary, please contact the HR department.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="payslip-detail empty-state">
+                        <div class="grid-item">
+                            <div class="empty-payslip">
+                                <div class="empty-icon">📄</div>
+                                <h3>No Payslip Selected</h3>
+                                <p>Please select a payslip from the list to view details</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Year filter functionality
+        document.getElementById('year-filter').addEventListener('change', function () {
+            const year = this.value;
+            const rows = document.querySelectorAll('.payslip-row');
+
+            rows.forEach(row => {
+                const rowYear = row.querySelector('td:nth-child(2)').textContent;
+                if (year === '' || rowYear === year) {
+                    row.style.display = 'table-row';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

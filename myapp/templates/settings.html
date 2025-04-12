@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings - Employee Payroll System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% load static %}
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Payroll System</h2>
+            </div>
+            <div class="user-info">
+                
+                <div class="user-details">
+                    <h3>{{ user.get_full_name }}</h3>
+                    <p>{{ user.role }}</p>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li ><a href="{% url 'dashboard' %}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{% url 'payroll' %}"><span class="icon">💰</span> Payroll</a></li>
+                {% if user.role == "Manager" %}
+                <li><a href="{% url 'salary' %}"><span class="icon">💰</span> Salary Management</a></li>
+                {% endif %}
+                {% if user.role != "Admin" %}
+                <li><a href="{% url 'leave' %}"><span class="icon">🗓️</span> Leave Management</a></li>
+                {% endif %}
+                {% if user.role == "Admin" %} 
+                <li><a href="{% url 'employee' %}"><span class="icon">👥</span> Employees</a></li>
+                {% endif %}
+                {% if user.role == "Admin" or user.role == "Employee"%}
+                <li><a href="{% url 'settings' %}"><span class="icon">⚙️</span> Settings</a></li>
+                {% endif %}
+                <li><a href="{% url 'logout' %}"><span class="icon">🚪</span> Logout</a></li>
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                    <button type="submit">🔍</button>
+                </div>
+                <div class="top-bar-actions">
+                    <div class="notification">
+                        <span class="icon">🔔</span>
+                        <span class="badge">3</span>
+                    </div>
+                    <div class="messages">
+                        <span class="icon">✉️</span>
+                        <span class="badge">5</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <div class="page-header">
+                    <h1>Account Settings</h1>
+                    <p>Manage your profile information and security settings</p>
+                </div>
+
+                <div class="settings-container">
+                    <!-- Settings Navigation Tabs -->
+                    <div class="settings-tabs">
+                        <button class="tab-btn active" data-tab="profile">Profile Information</button>
+                        <button class="tab-btn" data-tab="password">Change Password</button>
+                    </div>
+
+                    <!-- Profile Information Tab -->
+                    <div class="tab-content active" id="profile-tab">
+                        <div class="grid-item">
+                            <div class="item-header">
+                                <h2>Profile Information</h2>
+                            </div>
+
+                            {% if messages %}
+                            <div class="messages">
+                                {% for message in messages %}
+                                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                                    {{ message }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <form method="post" action="{% url 'update_profile' %}" class="settings-form" enctype="multipart/form-data">
+                                {% csrf_token %}
+
+                               
+                                <div class="form-section">
+                                    <h3>Personal Information</h3>
+
+                                    <div class="form-group">
+                                        <label for="first_name">First Name</label>
+                                        <input type="text" id="first_name" name="first_name" value="{{ user.first_name }}" readonly>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="last_name">Last Name</label>
+                                        <input type="text" id="last_name" name="last_name" value="{{ user.last_name }}" readonly>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="email">Email Address</label>
+                                        <input type="email" id="email" name="email" value="{{ user.email }}" readonly>
+                                    </div>
+                                    
+
+                                    
+                                </div>
+
+                                <div class="form-section">
+                                    <h3>Employment Information</h3>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="employee_id">Employee ID</label>
+                                            <input type="text" id="employee_id" value="{{ user.id }}"
+                                                readonly>
+                                            <p class="field-help">Employee ID cannot be changed</p>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="department">Department</label>
+                                            <input type="text" id="department" name="department"
+                                                value="{{ user.department }}" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="position">Position</label>
+                                            <input type="text" id="position" name="position"
+                                                value="{{ user.role|default:'' }}" readonly>
+                                        </div>
+
+                                        
+                                    </div>
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button type="button" id="edit-profile-btn" class="btn btn-secondary">Edit Profile</button>
+                                    <button type="submit" id="save-profile-btn" class="btn btn-primary" style="display: none;">Save Changes</button>
+                                </div>
+                                
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Change Password Tab -->
+                    <div class="tab-content" id="password-tab">
+                        <div class="grid-item">
+                            <div class="item-header">
+                                <h2>Change Password</h2>
+                            </div>
+
+                            <form method="post" action="{% url 'update_profile_pass' %}" class="settings-form">
+                                {% csrf_token %}
+
+                                <div class="form-section">
+                                    <div class="form-group">
+                                        <label for="current_password">Current Password</label>
+                                        <input type="password" id="current_password" name="current_password" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="new_password">New Password</label>
+                                        <input type="password" id="new_password" name="new_password" required>
+                                        <p class="field-help">Password must be at least 8 characters long and include a
+                                            mix of letters, numbers, and special characters</p>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="confirm_password">Confirm New Password</label>
+                                        <input type="password" id="confirm_password" name="confirm_password" required>
+                                    </div>
+                                </div>
+
+                                <div class="password-strength">
+                                    <div class="strength-meter">
+                                        <div class="strength-bar" id="strength-bar"></div>
+                                    </div>
+                                    <p class="strength-text" id="strength-text">Password strength: Not entered</p>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Change Password</button>
+                                </div>
+                            </form>
+
+                            
+                        </div>
+                    </div>
+
+                    
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Tab switching functionality
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    // Remove active class from all buttons and contents
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+
+                    // Add active class to clicked button
+                    this.classList.add('active');
+
+                    // Show corresponding tab content
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId + '-tab').classList.add('active');
+                });
+            });
+
+            // Avatar preview functionality
+            const avatarInput = document.getElementById('avatar-input');
+            const avatarPreview = document.getElementById('avatar-preview');
+
+            if (avatarInput && avatarPreview) {
+                avatarInput.addEventListener('change', function () {
+                    if (this.files && this.files[0]) {
+                        const reader = new FileReader();
+
+                        reader.onload = function (e) {
+                            avatarPreview.src = e.target.result;
+                        };
+
+                        reader.readAsDataURL(this.files[0]);
+                    }
+                });
+            }
+
+            // Password strength meter
+            const current_password = document.getElementById('current_password');
+            const newPasswordInput = document.getElementById('new_password');
+            const strengthBar = document.getElementById('strength-bar');
+            const strengthText = document.getElementById('strength-text');
+
+            if (newPasswordInput && strengthBar && strengthText) {
+                newPasswordInput.addEventListener('input', function () {
+                    const password = this.value;
+                    let strength = 0;
+                    let status = '';
+
+                    // Reset custom validity
+                    this.setCustomValidity('');
+
+                    // Check length first
+                    if (password.length === 0) {
+                        strength = 0;
+                        status = 'Not entered';
+                    } else if (password.length < 6) {
+                        strength = 25;
+                        status = 'Weak';
+                        this.setCustomValidity('Password must be at least 6 characters long.');
+                    } else if (password.length < 8) {
+                        strength = 50;
+                        status = 'Medium';
+                    } else if (password.match(/[a-z]/) && password.match(/[A-Z]/) && password.match(/[0-9]/)) {
+                        if (password.match(/[^a-zA-Z0-9]/)) {
+                            strength = 100;
+                            status = 'Strong';
+                        } else {
+                            strength = 75;
+                            status = 'Good';
+                        }
+                    } else {
+                        strength = 75;
+                        status = 'Good';
+                    }
+
+                    // Check if password meets strength requirements
+                    const isValidLength = password.length >= 8;
+                    const hasLowercase = /[a-z]/.test(password);
+                    const hasUppercase = /[A-Z]/.test(password);
+                    const hasNumber = /[0-9]/.test(password);
+                    const hasSpecialChar = /[^a-zA-Z0-9]/.test(password);
+
+                    if (newPasswordInput.value === current_password.value) {
+                        this.setCustomValidity('New password cannot be the same as the current password.');
+                    } else {
+                        this.setCustomValidity('');
+                    }
+                    
+                    if (!isValidLength) {
+                        this.setCustomValidity('Password must be at least 8 characters long.');
+                    }
+                    
+                    if (!hasLowercase) {
+                        this.setCustomValidity('Password must include at least one lowercase letter.');
+                    }
+
+                    if (!hasUppercase) {
+                        this.setCustomValidity('Password must include at least one uppercase letter.');
+                    }
+
+                    if (!hasNumber) {
+                        this.setCustomValidity('Password must include at least one number.');
+                    }
+
+                    if (!hasSpecialChar) {
+                        this.setCustomValidity('Password must include at least one special character.');
+                    }
+
+                    
+                    // Update strength bar
+                    strengthBar.style.width = strength + '%';
+
+                    // Update color based on strength
+                    if (strength <= 25) {
+                        strengthBar.style.backgroundColor = '#e74c3c';
+                    } else if (strength <= 50) {
+                        strengthBar.style.backgroundColor = '#f39c12';
+                    } else if (strength <= 75) {
+                        strengthBar.style.backgroundColor = '#3498db';
+                    } else {
+                        strengthBar.style.backgroundColor = '#2ecc71';
+                    }
+
+                    // Update text
+                    strengthText.textContent = 'Password strength: ' + status;
+                });
+            }
+
+            // Password confirmation validation
+            const confirmPasswordInput = document.getElementById('confirm_password');
+
+            if (newPasswordInput && confirmPasswordInput) {
+                confirmPasswordInput.addEventListener('input', function () {
+                    if (this.value !== newPasswordInput.value) {
+                        this.setCustomValidity('Passwords do not match');
+                    } else {
+                        this.setCustomValidity('');
+                    }
+                });
+
+                newPasswordInput.addEventListener('input', function () {
+                    if (confirmPasswordInput.value !== '') {
+                        if (confirmPasswordInput.value !== this.value) {
+                            confirmPasswordInput.setCustomValidity('Passwords do not match');
+                        } else {
+                            confirmPasswordInput.setCustomValidity('');
+                        }
+                    }
+                });
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const editBtn = document.getElementById('edit-profile-btn');
+            const saveBtn = document.getElementById('save-profile-btn');
+            const inputs = document.querySelectorAll('.settings-form input');
+
+            editBtn.addEventListener('click', function () {
+                inputs.forEach(input => {
+                    if (input.id !== 'department' && input.id !== 'position' && input.id !== 'employee_id') {
+                        input.removeAttribute('readonly');
+                    }
+                });
+                editBtn.style.display = 'none';
+                saveBtn.style.display = 'inline-block';
+            });
+            saveBtn.addEventListener("click", function () {
+                document.querySelector(".settings-form").submit(); // Submits the form
+            });
+        });
+       
+
+    </script>
+</body>
+
+</html>
